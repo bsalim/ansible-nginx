@@ -1,0 +1,33 @@
+---
+- name: Add Nginx Ubuntu APT Package
+  apt_repository: repo='ppa:nginx/stable' state=present
+  register: ppastable
+
+- name: Install the nginx packages
+  apt: name=nginx state=present update_cache=yes
+  when: ppastable|success
+  register: nginxinstalled
+
+
+- name: Create the directories for site specific configurations
+  file: path=/etc/nginx/{{ item }} state=directory owner=root group=root mode=0755
+  with_items:
+    - "sites-available"
+    - "sites-enabled"
+
+- name: Add H5BP (Renamed to Hulaa) Config
+  when: nginxinstalled|success
+  copy: src=hulaa dest=/etc/nginx owner=root group=root
+
+
+- name: Copy the nginx configuration file
+  copy: src=nginx.conf dest=/etc/nginx/nginx.conf owner=root group=root
+
+- name: Copy mime types
+  copy: src=mime.types dest=/etc/nginx/mime.types owner=root group=root
+
+- name: Copy the nginx configuration file
+  copy: src=hulaa dest=/etc/nginx owner=root group=root
+  notify:
+   - restart nginx
+
